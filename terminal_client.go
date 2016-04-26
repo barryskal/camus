@@ -119,7 +119,7 @@ func (c *TerminalClient) listCmd() error {
 
 	tbl := TableDef{
 		Columns: []ColumnDef{
-			ColumnDef{"id", 25},
+			ColumnDef{"id", 42},
 			ColumnDef{"pid", 5},
 			ColumnDef{"tracked", 7},
 			ColumnDef{"port", 4},
@@ -136,7 +136,7 @@ func (c *TerminalClient) listCmd() error {
 			yn(deploy.Tracked),
 			deploy.Port,
 			deploy.Health,
-			fmt.Sprintf("%v", deploy.Errors),
+			fmt.Sprintf("%v %s", deploy.Errors, activePointer(deploy.Set)),
 		)
 	}
 	return nil
@@ -172,3 +172,12 @@ func yn(b bool) string {
 		return "n"
 	}
 }
+
+func activePointer(b bool) string {
+  if b {
+    return "<--- ACTIVE"
+  } else {
+    return ""
+  }
+}
+
