@@ -420,6 +420,23 @@ func (s *ServerImpl) SetActiveById(id string) error {
 	return fmt.Errorf("No deploy %s, run 'list' to see valid deploys", id)
 }
 
+func (s *ServerImpl) GetFullDeployIdFromShortName(deployShortName string) (string, error) {
+  var matchingIds []string
+  for _, deployId := range s.readDeployIdsFromDisk() {
+    shortenedId := strings.TrimPrefix(deployId, deployShortName)
+    if shortenedId != deployId {
+      matchingIds = append(matchingIds, deployId)
+    }
+  }
+
+  numMatching := len(matchingIds)
+  if numMatching != 1 {
+    return "",fmt.Errorf("short name corresponds to %d deploy IDs, be more specific", numMatching)
+  }
+
+  return matchingIds[0], nil
+}
+
 func (s *ServerImpl) Run(deployIdToRun string) (int, error) {
 	for port, deployId := range s.config.Ports {
 		if deployIdToRun == deployId {
