@@ -375,10 +375,24 @@ func TestStop(t *testing.T) {
 }
 
 func writeDataIntoTestapp(t *testing.T, data string) {
-	err := ioutil.WriteFile("testapp/data/file", []byte(data), os.FileMode(0644))
+	tempFile, err := ioutil.TempFile(os.TempDir(), "tempData")
 	if err != nil {
-		t.Fatalf("write file: %s\n", err)
+		t.Fatalf("could not create temp file: %s\n", err)
 	}
+
+	_, err = tempFile.Write([]byte(data))
+	if err != nil {
+		os.Remove(tempFile.Name())
+		t.Fatalf("Could not write to temp file: %s\n", err)
+	}
+
+	tempFile.Close()
+	err = os.Rename(tempFile.Name(), "testapp/data/file")
+	if err != nil {
+		os.Remove(tempFile.Name())
+		t.Fatalf("Could not move temp file to testapp: %s\n", err)
+	}
+
 }
 
 func expectGet(t *testing.T, port int, path, expected string) {
