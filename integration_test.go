@@ -380,16 +380,16 @@ func writeDataIntoTestapp(t *testing.T, data string) {
 		t.Fatalf("could not create temp file: %s\n", err)
 	}
 
+	defer os.Remove(tempFile.Name())
+	defer tempFile.Close()
+
 	_, err = tempFile.Write([]byte(data))
 	if err != nil {
-		os.Remove(tempFile.Name())
 		t.Fatalf("Could not write to temp file: %s\n", err)
 	}
 
-	tempFile.Close()
 	err = os.Rename(tempFile.Name(), "testapp/data/file")
 	if err != nil {
-		os.Remove(tempFile.Name())
 		t.Fatalf("Could not move temp file to testapp: %s\n", err)
 	}
 
