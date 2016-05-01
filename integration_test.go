@@ -374,8 +374,8 @@ func TestStop(t *testing.T) {
 	}
 }
 
-func atomicWriteFile(t *testing.T, data string, filename string) error {
-  tempFile, err := ioutil.TempFile(os.TempDir(), "tempData")
+func atomicWriteFile(data string, filename string) error {
+	tempFile, err := ioutil.TempFile(os.TempDir(), "tempData")
 	if err != nil {
 		return fmt.Errorf("could not create temp file: %s\n", err)
 	}
@@ -385,22 +385,22 @@ func atomicWriteFile(t *testing.T, data string, filename string) error {
 
 	_, err = tempFile.Write([]byte(data))
 	if err != nil {
-		fmt.Errorf("Could not write to temp file: %s\n", err)
+		return fmt.Errorf("Could not write to temp file: %s\n", err)
 	}
 
 	err = os.Rename(tempFile.Name(), filename)
 	if err != nil {
-		fmt.Errorf("Could not move temp file to testapp: %s\n", err)
+		return fmt.Errorf("Could not move temp file to testapp: %s\n", err)
 	}
 
-  return nil
+	return nil
 }
 
 func writeDataIntoTestapp(t *testing.T, data string) {
-	err := atomicWriteFile(t, data, "testapp/data/file")
-  if (err != nil) {
-    t.Fatalf("%s", err)
-  }
+	err := atomicWriteFile(data, "testapp/data/file")
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
 }
 
 func expectGet(t *testing.T, port int, path, expected string) {
