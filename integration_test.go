@@ -397,8 +397,7 @@ func atomicWriteFile(data string, filename string) error {
 }
 
 func writeDataIntoTestapp(t *testing.T, data string) {
-	err := atomicWriteFile(data, "testapp/data/file")
-	if err != nil {
+	if err := atomicWriteFile(data, "testapp/data/file"); err != nil {
 		t.Fatalf("%s", err)
 	}
 }
