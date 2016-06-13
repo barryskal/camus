@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"encoding/csv"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -68,9 +67,6 @@ const (
 	haproxyConfig        = "haproxy.cfg"
 	haproxyPid           = "haproxy.pid"
 	appPid               = "PID_FILE"
-	minShortNameLength   = 3
-	haProxyPxnameIndex   = 0
-	haProxyStatusIndex   = 17
 )
 
 type Config struct {
@@ -301,7 +297,10 @@ func (s *ServerImpl) ListDeploys() ([]*Deploy, error) {
 	knownRunningDeploys := []*Deploy{}
 	deployIds := s.readDeployIdsFromDisk()
 	knownDeploys := []*Deploy{}
-	setPort, _ := s.getPortMarkedAsSet()
+	setPort, err := getPortMarkedAsSet(s.endPort)
+	if err != nil {
+		log.Println(err)
+	}
 	for _, deployId := range deployIds {
 		proc, running := procsByDeployId[deployId]
 		if pidOverride, err := s.getDeployPidOverride(deployId); err == nil {
@@ -339,55 +338,6 @@ func (s *ServerImpl) ListDeploys() ([]*Deploy, error) {
 	s.checkAllHealth(knownRunningDeploys)
 	return append(knownDeploys, unaccounted...), nil
 }
-
-func (s *ServerImpl) getPortMarkedAsSet() (int, error) {
-
-	url := fmt.Sprintf("http://localhost:%d/;csv", s.endPort)
-	resp, err := http.Get(url)
-	if err != nil {
-	  // Couldn't connect to haproxy don't modify the deploy list
-	  return -1, err
-	}
-	
-	defer resp.Body.Close()
-
-	records, err := csv.NewReader(resp.Body).ReadAll()
-	if err != nil {
-	  return -1, err
-	}
-
-	for i, row := range records {
-	  
-	  // skip header
-	  if i == 0 {
-	    continue
-	  } 
-
-	  // Find the first row that contains a Process name that 
-	  // looks like 'thing-PORT". 
-	  if strings.Contains(row[haProxyPxnameIndex], "thing-") {
-	    // Get the port number
-	    portStr := strings.Split(row[haProxyPxnameIndex], "-")[1]
-	    port, err := strconv.Atoi(portStr)
-	    if (err != nil) {
-	      return -1, err
-	    }
-
-	    // Check if that process is UP
-	    if strings.Compare(row[haProxyStatusIndex], "UP") == 0 {
-	      return port, nil
-	    } else {
-	      return -1, errors.New(fmt.Sprintf("No set port - App on %d is down\n", port))
-	    }
-
-	  }
-
-	}
-
-	return -1, errors.New(fmt.Sprintf("haProxy has does not have an application marked as set\n"))
-	 
-}
-
 
 func (s *ServerImpl) checkHealth(deploy *Deploy) {
 	app, err := ApplicationFromConfig(false, s.deployConfigFile(deploy.Id))
@@ -478,26 +428,6 @@ func (s *ServerImpl) SetActiveById(id string) error {
 	}
 
 	return fmt.Errorf("No deploy %s, run 'list' to see valid deploys", id)
-}
-
-func (s *ServerImpl) GetFullDeployIdFromShortName(deployShortName string) (string, error) {
-	if len(deployShortName) < minShortNameLength {
-		return "", fmt.Errorf("Deploy name substring is too short, needs to be at least %d characters", minShortNameLength)
-	}
-
-	var matchingIds []string
-	for _, deployId := range s.readDeployIdsFromDisk() {
-		if strings.Contains(deployId, deployShortName) {
-			matchingIds = append(matchingIds, deployId)
-		}
-	}
-
-	numMatching := len(matchingIds)
-	if numMatching != 1 {
-		return "", fmt.Errorf("short name corresponds to %d deploy IDs, be more specific", numMatching)
-	}
-
-	return matchingIds[0], nil
 }
 
 func (s *ServerImpl) Run(deployIdToRun string) (int, error) {
