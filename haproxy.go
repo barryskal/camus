@@ -25,7 +25,7 @@ const (
 	// needs to be consistent from when the server is first
 	// started, as it is used to define the currently active
 	// deploy
-	backendProcessName = "thing-"
+	backendProcessName = "deployed-app-"
 )
 
 var cfgTemplate = `
@@ -134,7 +134,7 @@ func parseBackendEntry(row []string) (bool, int) {
 	pxName := row[haProxyPxnameIndex]
 	if strings.Contains(pxName, backendProcessName) {
 		// Get the port number
-		portStr := strings.Split(pxName, "-")[1]
+		portStr := strings.TrimPrefix(pxName, backendProcessName)
 		port, err := strconv.Atoi(portStr)
 
 		if err != nil {
